@@ -15,7 +15,7 @@ module.exports = {
       },
       backgroundImage : {
         'banner': "url('./src/assets/banner-nba.jpg')",
-        'video': "url('./src/assets/video-nba.jpg')",
+        'video': "url('./src/assets/NBA_video.mp4')",
       },
     },
   },
