@@ -120,6 +120,16 @@ const Login: React.FC = () => {
                             value={login.password}
                         />
                     </div>
+
+                    <div className="mb-6">
+                        <span className="flex gap-3">
+                            {Traduction.LoginTraduction.dontHaveAnAccount}
+                            <a href="/register" className="text-blue-700 hover:text-blue-800 font-medium">
+                                {Traduction.LoginTraduction.register}
+                            </a>
+                        </span>
+                    </div>
+
                     <button type="submit"
                         className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-purple dark:focus:ring-blue-800">
                         {/* set loading effect  */}

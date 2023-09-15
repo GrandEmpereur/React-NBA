@@ -32,6 +32,8 @@ const LoginTraduction = {
     email : 'Email',
     password: 'Password',
     button: 'Login',
+    dontHaveAnAccount: 'Don\'t have an account?',
+    register: 'Register',
 };
 
 const MatchesListComponentTraduction = {
@@ -58,6 +60,8 @@ const RegisterTraduction = {
     email : 'Email',
     password: 'Password',
     button: 'Register',
+    alreadyHaveAnAccount: 'Already have an account?',
+    login: 'Login',
 };
 
 const TopTeamsComponentTraduction = {
