@@ -99,7 +99,7 @@ const Register: React.FC = () => {
 	return (
 		<div className="relative h-screen flex  flex-col items-center justify-center text-center text-white py-0 px-3">
 			<video
-				src="src/assets/NBA_video.mp4"
+				src="./assets/NBA_video.mp4"
 				autoPlay
 				loop
 				muted

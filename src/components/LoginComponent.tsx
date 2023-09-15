@@ -76,7 +76,7 @@ const Login: React.FC = () => {
 
     return (
         <div className="relative h-screen flex  flex-col items-center justify-center text-center text-white py-0 px-3">
-            <video src="src/assets/NBA_video.mp4" autoPlay loop muted className="blur-sm z-10 w-full h-full" />
+            <video src="./assets/NBA_video.mp4" autoPlay loop muted className="blur-sm z-10 w-full h-full" />
 
             <div className={" p-8 flex justify-center bg-darkgray z-20 absolute rounded-xl"}>
                 <form onSubmit={handleSubmit}>
