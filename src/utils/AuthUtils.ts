@@ -9,22 +9,27 @@ import { getUsers } from '../services/AuthServices';
  * @param {string} password - string
  * @returns An object with two properties: success and message.
  */
-export async function Login(email: string, password: string) {
-    const users = await getUsers();
-    const user = users.find((user: User) => user.email === email);
-    if (user) {
-        if (user.password === password) {
-            return {
-                success: 200,
-                message: 'Login successful',
-            }
-        } else {
+export const Login = async (email: string, password: string) => {
+    try {
+        const users = await getUsers();
+        const user = users.find((user: User) => user.email === email);
+
+        if (!user) {
+            throw new Error('Email not found');
+        }
+
+        if (user.password !== password) {
             throw new Error('Wrong password');
         }
-    } else {
-        throw new Error('Email not found');
+
+        return {
+            success: 200,
+            message: 'Login successful',
+        };
+    } catch (error) {
+        throw error;
     }
-}
+};
 
 /**
  * If the user is logged in, return true, else return false.

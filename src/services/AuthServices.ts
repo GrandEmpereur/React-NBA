@@ -14,7 +14,7 @@ updateAxiosInstance()
  */
 export async function getUsers() {
     const response = await instance.get('/latest');
-    return response.data.record;
+    return response.data.record.users || [];
 }
 
 /**
@@ -34,8 +34,15 @@ export function getUserByEmail(email: string) {
  * @param {User} user - User - this is the user object that is being passed in.
  * @returns The response.data is the data that is returned from the server.
  */
-export async function CreateUser(user: User) {
-    const response = await instance.put('/', user);
+export async function CreateUser(newUser: User) {
+    // Récupérer les utilisateurs existants
+    const existingUsers = await getUsers();
+
+    // Ajouter le nouvel utilisateur à la liste existante
+    existingUsers.push(newUser);
+
+    // Mettre à jour la base de données
+    const response = await instance.put('/', { users: existingUsers });
     return response.data;
 }
 

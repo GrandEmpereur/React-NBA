@@ -81,6 +81,7 @@ const ErrorMessagesTraduction = {
 
     loginFailed: "Login failed",
     somethingWentWrong: "Something went wrong",
+    failedToLoadUsers: "Failed to load users",
 };
 
 
