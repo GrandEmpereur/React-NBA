@@ -1,121 +1,100 @@
 import React, { useState, useEffect } from "react";
 import * as Auth from "../services/AuthServices";
 import { User } from "../types/UserType";
-import { v4 as uuid } from "@lukeed/uuid";
+import { v4 as uuidv4 } from 'uuid';
 import bcrypt from "bcryptjs";
 import Traduction from "../languages/Traduction";
 
-function Register() {
-	/* Getting the users from the database and storing them in the userFromDb state. */
-	const [userFromDb, setuserFromDb] = useState([] as User[]);
+const Register: React.FC = () => {
+	// State to hold users fetched from the database
+	const [usersFromDb, setUsersFromDb] = useState<User[]>([]);
+	const id = uuidv4();
+
+	// Fetch all users from the database when the component mounts
 	useEffect(() => {
-		Auth.getUsers().then((users) => {
-			setuserFromDb(users);
-		});
+		const fetchUsers = async () => {
+			const fetchedUsers = await Auth.getUsers();
+			setUsersFromDb(fetchedUsers);
+		};
+
+		fetchUsers();
 	}, []);
 
-	/* Creating a state for the user. */
-	const [user, setUser] = useState({
-		id: uuid(),
+	// Initialize new user state
+	const [newUser, setNewUser] = useState<User>({
+		id: id,
 		username: "",
 		email: "",
 		password: "",
-	} as User);
+	});
 
-	/**
-	 * If the input is empty, set error to "All fields are required". If the input is not empty, check if
-	 * the email already exists in the database. If it does, set error to "Email already exists". If it
-	 * doesn't, check if the email is valid. If it is, set error to "". If it isn't, set error to "Email
-	 * is not valid"
-	 * @param {any} e - any -&gt; the event object
-	 * @returns the user object with the hashed password.
-	 */
-	const handleChange = (e: any) => {
-		setError("");
+	// Initialize error and loading states
+	const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
 
-		setUser({
-			...user,
-			[e.target.name]:
-				e.target.name === "password"
-					? bcrypt.hashSync(e.target.value, 10)
-					: e.target.value,
-		});
+	// Handle form input changes
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setError(null);
+		const { name, value } = e.target;
+		setNewUser(prevUser => ({
+			...prevUser,
+			[name]: value,
+		}));
 	};
 
-	/* It's adding the user to the database. */
-	const newUser: any = [];
-	const addNewUserToAnArray = () => {
-		newUser.push(...userFromDb, user);
-	};
-	addNewUserToAnArray();
-
-	/**
-	 * When the user submits the form, prevent the default action, create a new user in the database, and
-	 * then crypt the password.
-	 * @param e - React.FormEvent<HTMLFormElement>
-	 */
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+	// Handle form submission
+	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		// check if the email or password is empty
+		setError(null);
 
-		/* It's setting the error state to null. */
-		if (error) {
-			setError("");
-		}
-
-		/* It's checking if the email, password, and username are empty. If they are, it's setting the error
-		state to "All fields are required". If they aren't, it's checking if the email, password, and
-		username are empty. If they are, it's setting the error state to "Email is required", "Password is
-		required", and "Username is required". */
-		if (!user.email && !user.password && !user.username) {
+		// Validate input fields
+		if (!newUser.username || !newUser.email || !newUser.password) {
 			setError(Traduction.ErrorMessagesTraduction.allFieldsAreRequired);
 			return;
-		}else if (!user.username) {
-			setError(Traduction.ErrorMessagesTraduction.userNameIsRequired);
-			return;
-		}else if (!user.email) {
-			setError(Traduction.ErrorMessagesTraduction.emailIsRequired);
-			return;
-		}else if (!user.password) {
-			setError(Traduction.ErrorMessagesTraduction.passwordIsRequired);
-			return;
 		}
 
-		// check if the email of the input = the email of the user in the database
-		const emailExists = userFromDb.find((users) => users.email === user.email);
+		// Check if email already exists
+		const emailExists = Array.isArray(usersFromDb) && usersFromDb.some(user => user.email === newUser.email);
 		if (emailExists) {
 			setError(Traduction.ErrorMessagesTraduction.emailAlreadyExists);
 			return;
-		}else if (!/\S+@\S+\.\S+/.test(user.email)) {
+		}
+
+		// Validate email format
+		if (!/\S+@\S+\.\S+/.test(newUser.email)) {
 			setError(Traduction.ErrorMessagesTraduction.emailNotValid);
 			return;
 		}
 
-		// check if the password is valid
-		if (user.password.length < 6) {
+		// Validate password length
+		if (newUser.password.length < 6) {
 			setError(Traduction.ErrorMessagesTraduction.passwordLengthIncorrect);
 			return;
 		}
 
-		// create a new user in the database
-		Auth.CreateUser(newUser).then((data) => {
-			if (!data) {
-				setError(Traduction.ErrorMessagesTraduction.somethingWentWrong);
-			} else {
-				localStorage.setItem("isAuthenticated", "true");
-				localStorage.setItem("user", user.username);
-				setLoading(true);
-				setTimeout(() => {
-					setLoading(false);
-					window.location.href = "/app";
-				}, 2000);
-			}
-		});
-	};
+		try {
+			// Hash the password before sending it to the server
+			const hashedPassword = bcrypt.hashSync(newUser.password, 10);
+			const userToSend = { ...newUser, password: hashedPassword };
 
-	/* It's setting the error and loading state to null and false. */
-	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
+			// Attempt to create the new user
+			setLoading(true);
+			const response = await Auth.CreateUser(userToSend);
+			if (response) {
+				setLoading(false);
+				// Update local storage and redirect user
+				localStorage.setItem("isAuthenticated", "true");
+				localStorage.setItem("user", newUser.username);
+				window.location.href = "/app";
+			} else {
+				setLoading(false);
+				setError(Traduction.ErrorMessagesTraduction.somethingWentWrong);
+			}
+		} catch (error) {
+			setLoading(false);
+			setError(Traduction.ErrorMessagesTraduction.somethingWentWrong);
+		}
+	};
 
 	return (
 		<div className="relative h-screen flex  flex-col items-center justify-center text-center text-white py-0 px-3">
@@ -147,11 +126,10 @@ function Register() {
 							type="text"
 							name="username"
 							id="username"
-							className={`w-60 shadow-sm border border-gray-300 text-sm rounded-lg block w-full p-2.5 bg-lightgray border-gray-600 placeholder-gray-400 text-white focus:ring-purple focus:border-purple focus:outline-purple shadow-sm-light ${
-								error == Traduction.ErrorMessagesTraduction.userNameIsRequired ||
+							className={`shadow-sm border text-sm rounded-lg block w-full p-2.5 bg-lightgray border-gray-600 placeholder-gray-400 text-white focus:ring-purple focus:border-purple focus:outline-purple shadow-sm-light ${error == Traduction.ErrorMessagesTraduction.userNameIsRequired ||
 								error == Traduction.ErrorMessagesTraduction.allFieldsAreRequired
 								? "border-red-500" : ""
-							}`}
+								}`}
 							onChange={handleChange}
 							value={newUser.username}
 							placeholder="Username"
@@ -165,13 +143,12 @@ function Register() {
 							{Traduction.RegisterTraduction.email}
 						</label>
 						<input
-							className={`w-60 shadow-sm border border-gray-300 text-sm rounded-lg block w-full p-2.5 bg-lightgray border-gray-600 placeholder-gray-400 text-white focus:ring-purple focus:border-purple focus:outline-purple shadow-sm-light ${
-								error == Traduction.ErrorMessagesTraduction.emailAlreadyExists ||
+							className={`shadow-sm border  text-sm rounded-lg block w-full p-2.5 bg-lightgray border-gray-600 placeholder-gray-400 text-white focus:ring-purple focus:border-purple focus:outline-purple shadow-sm-light ${error == Traduction.ErrorMessagesTraduction.emailAlreadyExists ||
 								error == Traduction.ErrorMessagesTraduction.emailNotValid ||
 								error == Traduction.ErrorMessagesTraduction.emailIsRequired ||
 								error == Traduction.ErrorMessagesTraduction.allFieldsAreRequired
 								? "border-red-500" : ""
-							}`}
+								}`}
 							type="email"
 							name="email"
 							id="email"
@@ -191,12 +168,11 @@ function Register() {
 							type="password"
 							name="password"
 							id="password"
-							className={`w-60 shadow-sm border border-gray-300 text-sm rounded-lg block w-full p-2.5 bg-lightgray border-gray-600 placeholder-gray-400 text-white focus:ring-purple focus:border-purple focus:outline-purple shadow-sm-light ${
-								error == Traduction.ErrorMessagesTraduction.passwordIsRequired ||
+							className={`shadow-sm border text-sm rounded-lg block w-full p-2.5 bg-lightgray border-gray-600 placeholder-gray-400 text-white focus:ring-purple focus:border-purple focus:outline-purple shadow-sm-light ${error == Traduction.ErrorMessagesTraduction.passwordIsRequired ||
 								error == Traduction.ErrorMessagesTraduction.passwordLengthIncorrect ||
 								error == Traduction.ErrorMessagesTraduction.allFieldsAreRequired
 								? "border-red-500" : ""
-							}`}
+								}`}
 							onChange={handleChange}
 							placeholder="Password"
 							value={newUser.password}
